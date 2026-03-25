@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Administrativo — Gestão de Usuários</title>
+  <style>
+    /* ── RESET & BASE ─────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primaria:   #1a252f;
+      --secundaria: #2c3e50;
+      --destaque:   #2980b9;
+      --sucesso:    #27ae60;
+      --alerta:     #e67e22;
+      --perigo:     #e74c3c;
+      --fundo:      #f0f2f5;
+      --branco:     #ffffff;
+      --borda:      #d0d7de;
+      --texto:      #24292f;
+      --subtexto:   #57606a;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--fundo);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+
+    /* ── ACESSIBILIDADE: foco visível ─────── */
+    /* Teste de teclado: pressione Tab para navegar */
+    *:focus-visible {
+      outline: 3px solid var(--destaque);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    /* Skip link: acessibilidade via teclado */
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 16px;
+      background: var(--destaque);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-weight: bold;
+      z-index: 9999;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 16px; }
+
+    /* ── HEADER ──────────────────────────── */
+    header {
+      background: var(--primaria);
+      color: #fff;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    header h1 { font-size: 1.2rem; letter-spacing: 0.5px; }
+    header span { font-size: 0.85rem; color: #aab8c2; }
+
+    /* ── LAYOUT PRINCIPAL ────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px;
+      display: grid;
+      gap: 32px;
+    }
+
+    section {
+      background: var(--branco);
+      border-radius: 10px;
+      padding: 28px 32px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+
+    section > h2 {
+      font-size: 1.05rem;
+      color: var(--secundaria);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--fundo);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── FORMULÁRIO DE FILTRO (GET) ──────── */
+    #form-filtro {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    #form-filtro .campo-filtro {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    #form-filtro label {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--subtexto);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    #form-filtro input,
+    #form-filtro select {
+      padding: 8px 12px;
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #f6f8fa;
+      transition: border 0.2s, background 0.2s;
+    }
+
+    #form-filtro input:focus,
+    #form-filtro select:focus {
+      background: var(--branco);
+      border-color: var(--destaque);
+    }
+
+    #form-filtro button {
+      padding: 8px 20px;
+      background: var(--destaque);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      height: 38px;
+      transition: background 0.2s;
+    }
+    #form-filtro button:hover,
+    #form-filtro button:focus-visible { background: #1a6fa0; }
+
+    /* ── TABELA ──────────────────────────── */
+    .wrapper-tabela { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      min-width: 700px;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--borda);
+    }
+
+    thead tr:first-child th {
+      background: var(--primaria);
+      color: #fff;
+      font-size: 0.95rem;
+      text-align: center;
+      letter-spacing: 0.4px;
+    }
+
+    thead tr:last-child th {
+      background: var(--secundaria);
+      color: #ecf0f1;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr { transition: background 0.15s; }
+    tbody tr:hover { background: #f0f6ff; }
+    tbody tr:nth-child(even) { background: #f6f8fa; }
+    tbody tr:nth-child(even):hover { background: #e8f1fb; }
+
+    /* Célula com rowspan: grupo de usuários */
+    td[rowspan] {
+      background: #dce8f5;
+      font-weight: bold;
+      vertical-align: middle;
+      color: var(--secundaria);
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    tfoot td {
+      background: var(--primaria);
+      color: #ecf0f1;
+      font-weight: bold;
+      border-top: 2px solid var(--destaque);
+    }
+
+    /* Badges de status */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+    .badge-ativo    { background: #d4edda; color: #155724; }
+    .badge-inativo  { background: #f8d7da; color: #721c24; }
+    .badge-pendente { background: #fff3cd; color: #856404; }
+
+    /* Perfis */
+    .badge-admin { background: #cce5ff; color: #004085; }
+    .badge-editor { background: #e2d9f3; color: #4a235a; }
+    .badge-viewer { background: #e2e3e5; color: #383d41; }
+
+    /* Ações na tabela */
+    .acoes { display: flex; gap: 6px; }
+    .btn-acao {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: bold;
+      transition: opacity 0.2s;
+    }
+    .btn-acao:hover { opacity: 0.8; }
+    .btn-editar  { background: #fff3cd; color: #856404; border-color: #ffc107; }
+    .btn-excluir { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+    /* ── FORMULÁRIO NOVO USUÁRIO (POST) ─── */
+    #form-novo-usuario fieldset {
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    #form-novo-usuario legend {
+      font-weight: bold;
+      color: var(--secundaria);
+      padding: 0 8px;
+      font-size: 0.92rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .campo label {
+      font-size: 0.82rem;
+      font-weight: bold;
+      color: var(--subtexto);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* Indicador obrigatório acessível */
+    .campo label .obrigatorio {
+      color: var(--perigo);
+      margin-left: 2px;
+      aria-hidden: true;
+    }
+
+    .campo input,
+    .campo select,
+    .campo textarea {
+      padding: 9px 12px;
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+      font-size: 0.92rem;
+      transition: border 0.2s, box-shadow 0.2s;
+      background: #f6f8fa;
+      width: 100%;
+    }
+
+    .campo input:focus,
+    .campo select:focus,
+    .campo textarea:focus {
+      border-color: var(--destaque);
+      background: var(--branco);
+      box-shadow: 0 0 0 3px rgba(41,128,185,0.15);
+    }
+
+    /* Validação visual nativa */
+    .campo input:invalid:not(:placeholder-shown) {
+      border-color: var(--perigo);
+      background: #fff5f5;
+    }
+    .campo input:valid:not(:placeholder-shown) {
+      border-color: var(--sucesso);
+      background: #f0fff4;
+    }
+
+    .dica {
+      font-size: 0.75rem;
+      color: var(--subtexto);
+      margin-top: 2px;
+    }
+
+    /* Grupos de radio e checkbox */
+    .opcoes-grupo {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 8px 0;
+    }
+    .opcoes-grupo label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+    .opcoes-grupo input { width: auto; }
+
+    /* Barra de ações do formulário */
+    .acoes-form {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding-top: 8px;
+      border-top: 1px solid var(--borda);
+    }
+
+    .btn-primario {
+      padding: 10px 28px;
+      background: var(--sucesso);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primario:hover,
+    .btn-primario:focus-visible { background: #1e8449; }
+
+    .btn-secundario {
+      padding: 10px 20px;
+      background: var(--branco);
+      color: var(--subtexto);
+      border: 1px solid var(--borda);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-secundario:hover { background: var(--fundo); }
+
+    /* ── GUIA DE ACESSIBILIDADE ──────────── */
+    .guia-acessibilidade {
+      background: #f0f6ff;
+      border: 1px solid #b3d1f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+    .guia-acessibilidade h3 {
+      font-size: 0.9rem;
+      color: var(--secundaria);
+      margin-bottom: 10px;
+    }
+    .atalhos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px;
+    }
+    .atalho {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    kbd {
+      background: var(--primaria);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
+    /* ── RESPONSIVIDADE ──────────────────── */
+    @media (max-width: 680px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      header { padding: 14px 20px; }
+      section { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SKIP LINK: acessibilidade via teclado (Tab na abertura da página) -->
+  <a href="#tabela-usuarios" class="skip-link">⌨ Pular para a tabela de usuários</a>
+
+  <!-- ══ HEADER ══════════════════════════════════════════ -->
+  <header role="banner">
+    <h1>🛡 Painel Administrativo</h1>
+    <span>Gestão de Usuários — Sistema de Controle de Acesso</span>
+  </header>
+
+  <main role="main">
+
+    <!-- ══════════════════════════════════════════════════
+         SEÇÃO 1: FORMULÁRIO DE FILTRO (method="GET")
+         GET: consulta — os parâmetros aparecem na URL,
+         permitindo bookmarks e compartilhamento do filtro.
+    ═══════════════════════════════════════════════════ -->
+    <section aria-labelledby="titulo-filtro">
+      <h2 id="titulo-filtro">🔍 Filtrar Usuários</h2>
+
+      <!--
+        method="GET": filtros de consulta vão para a URL
+        Ex: /usuarios?nome=murilo&perfil=admin&status=ativo
+        Ideal para buscas, pois o resultado pode ser salvo/compartilhado
+      -->
+      <form
+        id="form-filtro"
+        method="GET"
+        action="/usuarios"
+        role="search"
+        aria-label="Formulário de filtro de usuários"
+      >
+
+        <!-- label for="busca-nome" vincula o rótulo ao input pelo id -->
+        <div class="campo-filtro">
+          <label for="busca-nome">Nome ou e-mail</label>
+          <input
+            type="search"
+            id="busca-nome"
+            name="nome"
+            placeholder="Buscar..."
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="campo-filtro">
+          <label for="filtro-perfil">Perfil</label>
+          <select id="filtro-perfil" name="perfil">
+            <option value="">Todos os perfis</option>
+            <option value="admin">Administrador</option>
+            <option value="editor">Editor</option>
+            <option value="viewer">Visualizador</option>
+          </select>
+        </div>
+
+        <div class="campo-filtro">
+          <label for="filtro-status">Status</label>
+          <select id="filtro-status" name="status">
+            <option value="">Todos</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="pendente">Pendente</option>
+          </select>
+        </div>
+
+        <div class="campo-filtro">
+          <label for="filtro-desde">Cadastrado desde</label>
+          <input type="date" id="filtro-desde" name="desde">
+        </div>
+
+        <button type="submit" aria-label="Aplicar filtros">🔎 Filtrar</button>
+        <button
+          type="reset"
+          style="padding:8px 16px;height:38px;border-radius:6px;border:1px solid var(--borda);cursor:pointer;font-size:0.9rem;"
+          aria-label="Limpar filtros"
+        >✖ Limpar</button>
+
+      </form>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════════
+         SEÇÃO 2: TABELA DE USUÁRIOS
+         thead / tbody / tfoot + colspan + rowspan
+    ═══════════════════════════════════════════════════ -->
+    <section aria-labelledby="titulo-tabela">
+      <h2 id="titulo-tabela">👥 Usuários Cadastrados</h2>
+
+      <div class="wrapper-tabela" role="region" aria-label="Tabela de usuários" tabindex="0">
+        <table id="tabela-usuarios" aria-describedby="titulo-tabela">
+
+          <!-- ── THEAD ────────────────────────────────── -->
+          <thead>
+            <!-- Linha 1: título com colspan total -->
+            <tr>
+              <th colspan="7" scope="col">
+                📋 Registro de Usuários do Sistema — 2026
+              </th>
+            </tr>
+            <!-- Linha 2: cabeçalhos com scope para acessibilidade -->
+            <tr>
+              <th scope="col">Grupo</th>
+              <th scope="col">Nome</th>
+              <th scope="col">E-mail</th>
+              <th scope="col">Perfil</th>
+              <th scope="col">Status</th>
+              <th scope="col">Cadastro</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+
+          <!-- ── TBODY ────────────────────────────────── -->
+          <tbody>
+
+            <!-- GRUPO: Administradores (rowspan=2) -->
+            <tr>
+              <td rowspan="2" scope="rowgroup">👑 Admins</td>
+              <td>Murilo Oliveira</td>
+              <td>murilo@sistema.com</td>
+              <td><span class="badge badge-admin">Admin</span></td>
+              <td><span class="badge badge-ativo">Ativo</span></td>
+              <td>10/01/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Murilo Oliveira">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Murilo Oliveira">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <!-- sem <td> para Grupo — rowspan acima já ocupa -->
+              <td>Ana Beatriz</td>
+              <td>ana@sistema.com</td>
+              <td><span class="badge badge-admin">Admin</span></td>
+              <td><span class="badge badge-ativo">Ativo</span></td>
+              <td>15/01/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Ana Beatriz">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Ana Beatriz">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- GRUPO: Editores (rowspan=3) -->
+            <tr>
+              <td rowspan="3" scope="rowgroup">✍ Editores</td>
+              <td>Carlos Eduardo</td>
+              <td>carlos@sistema.com</td>
+              <td><span class="badge badge-editor">Editor</span></td>
+              <td><span class="badge badge-ativo">Ativo</span></td>
+              <td>20/01/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Carlos Eduardo">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Carlos Eduardo">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Fernanda Lima</td>
+              <td>fernanda@sistema.com</td>
+              <td><span class="badge badge-editor">Editor</span></td>
+              <td><span class="badge badge-pendente">Pendente</span></td>
+              <td>22/02/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Fernanda Lima">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Fernanda Lima">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Ricardo Souza</td>
+              <td>ricardo@sistema.com</td>
+              <td><span class="badge badge-editor">Editor</span></td>
+              <td><span class="badge badge-inativo">Inativo</span></td>
+              <td>05/03/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Ricardo Souza">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Ricardo Souza">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- GRUPO: Visualizadores (rowspan=2) -->
+            <tr>
+              <td rowspan="2" scope="rowgroup">👁 Viewers</td>
+              <td>Juliana Costa</td>
+              <td>juliana@sistema.com</td>
+              <td><span class="badge badge-viewer">Viewer</span></td>
+              <td><span class="badge badge-ativo">Ativo</span></td>
+              <td>10/03/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Juliana Costa">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Juliana Costa">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>Pedro Alves</td>
+              <td>pedro@sistema.com</td>
+              <td><span class="badge badge-viewer">Viewer</span></td>
+              <td><span class="badge badge-pendente">Pendente</span></td>
+              <td>18/03/2026</td>
+              <td>
+                <div class="acoes">
+                  <button class="btn-acao btn-editar" aria-label="Editar Pedro Alves">✏ Editar</button>
+                  <button class="btn-acao btn-excluir" aria-label="Excluir Pedro Alves">🗑 Excluir</button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+
+          <!-- ── TFOOT ────────────────────────────────── -->
+          <tfoot>
+            <tr>
+              <td colspan="4">Total de usuários cadastrados</td>
+              <td colspan="3">7 usuários | ✔ 4 Ativos | ⚠ 2 Pendentes | ✖ 1 Inativo</td>
+            </tr>
+          </tfoot>
+
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════════
+         SEÇÃO 3: FORMULÁRIO NOVO USUÁRIO (method="POST")
+         POST: criação de registro — dados no corpo da
+         requisição HTTP, invisíveis na URL e nos logs.
+    ═══════════════════════════════════════════════════ -->
+    <section aria-labelledby="titulo-form">
+      <h2 id="titulo-form">➕ Cadastrar Novo Usuário</h2>
+
+      <!--
+        method="POST": envio seguro para criação de recurso no servidor.
+        Dados NÃO aparecem na URL. Ideal para dados sensíveis (senhas).
+        action="POST /usuarios" — rota REST de criação.
+      -->
+      <form
+        id="form-novo-usuario"
+        method="POST"
+        action="/usuarios"
+        novalidate
+        aria-label="Formulário de cadastro de novo usuário"
+      >
+
+        <!-- Campo oculto: token CSRF de segurança (invisível ao usuário) -->
+        <input type="hidden" name="csrf_token" value="tok_8f3k2p9x_seguro_2026">
+
+        <!-- ── FIELDSET 1: Dados Pessoais ─────── -->
+        <fieldset>
+          <legend>👤 Dados Pessoais</legend>
+
+          <div class="grid-2">
+            <div class="campo">
+              <label for="novo-nome">
+                Nome completo <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+              </label>
+              <input
+                type="text"
+                id="novo-nome"
+                name="nome"
+                placeholder="Ex: João da Silva"
+                required
+                minlength="3"
+                maxlength="80"
+                autocomplete="name"
+                aria-required="true"
+                aria-describedby="dica-nome"
+              >
+              <span class="dica" id="dica-nome">Mínimo de 3 caracteres</span>
+            </div>
+
+            <div class="campo">
+              <label for="novo-nascimento">Data de nascimento</label>
+              <input
+                type="date"
+                id="novo-nascimento"
+                name="dataNasc"
+                max="2008-12-31"
+                autocomplete="bday"
+              >
+              <span class="dica">Usuário deve ter pelo menos 18 anos</span>
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-top:16px">
+            <div class="campo">
+              <label for="novo-email">
+                E-mail <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+              </label>
+              <input
+                type="email"
+                id="novo-email"
+                name="email"
+                placeholder="usuario@dominio.com"
+                required
+                pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$"
+                autocomplete="email"
+                aria-required="true"
+                aria-describedby="dica-email"
+                title="Digite um e-mail válido"
+              >
+              <span class="dica" id="dica-email">Validação RFC 5322 — usado para login</span>
+            </div>
+
+            <div class="campo">
+              <label for="novo-tel">Telefone</label>
+              <input
+                type="tel"
+                id="novo-tel"
+                name="telefone"
+                placeholder="(92) 99999-9999"
+                pattern="\(\d{2}\)\s?\d{4,5}-\d{4}"
+                autocomplete="tel"
+                title="Formato: (DD) NNNNN-NNNN"
+              >
+              <span class="dica">Formato: (DDD) 99999-9999</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- ── FIELDSET 2: Dados de Acesso ────── -->
+        <fieldset>
+          <legend>🔐 Dados de Acesso</legend>
+
+          <div class="campo" style="margin-bottom:16px">
+            <label for="novo-usuario">
+              Nome de usuário <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+            </label>
+            <input
+              type="text"
+              id="novo-usuario"
+              name="username"
+              placeholder="Ex: joao_silva"
+              required
+              minlength="4"
+              maxlength="20"
+              pattern="[a-z0-9_]+"
+              autocomplete="username"
+              aria-required="true"
+              aria-describedby="dica-usuario"
+              title="Letras minúsculas, números e underline (_)"
+            >
+            <span class="dica" id="dica-usuario">4–20 chars: letras minúsculas, números e _ apenas</span>
+          </div>
+
+          <div class="grid-2">
+            <div class="campo">
+              <label for="novo-senha">
+                Senha <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+              </label>
+              <input
+                type="password"
+                id="novo-senha"
+                name="senha"
+                required
+                minlength="8"
+                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                autocomplete="new-password"
+                aria-required="true"
+                aria-describedby="dica-senha"
+                title="Mínimo 8 chars com maiúscula, minúscula e número"
+              >
+              <span class="dica" id="dica-senha">
+                Regex: ≥8 chars + 1 maiúscula + 1 minúscula + 1 número
+              </span>
+            </div>
+
+            <div class="campo">
+              <label for="novo-confirmar-senha">
+                Confirmar senha <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+              </label>
+              <input
+                type="password"
+                id="novo-confirmar-senha"
+                name="confirmarSenha"
+                required
+                autocomplete="new-password"
+                aria-required="true"
+                title="Repita a senha digitada ao lado"
+              >
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- ── FIELDSET 3: Permissões e Configurações ── -->
+        <fieldset>
+          <legend>⚙️ Permissões e Configurações</legend>
+
+          <div class="grid-3" style="margin-bottom:16px">
+            <div class="campo">
+              <label for="novo-perfil">
+                Perfil de acesso <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+              </label>
+              <select id="novo-perfil" name="perfil" required aria-required="true">
+                <option value="">-- Selecione --</option>
+                <option value="admin">Administrador</option>
+                <option value="editor">Editor</option>
+                <option value="viewer">Visualizador</option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="novo-departamento">Departamento</label>
+              <select id="novo-departamento" name="departamento">
+                <option value="">-- Selecione --</option>
+                <option value="ti">TI / Desenvolvimento</option>
+                <option value="seg">Cibersegurança (SOC)</option>
+                <option value="dados">Ciência de Dados</option>
+                <option value="redes">Redes / Infraestrutura</option>
+                <option value="gest">Gestão</option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="novo-expiracao">Expiração do acesso</label>
+              <input
+                type="date"
+                id="novo-expiracao"
+                name="expiracao"
+                min="2026-01-01"
+              >
+              <span class="dica">Deixe vazio para acesso permanente</span>
+            </div>
+          </div>
+
+          <!-- Status: radio (seleção única, obrigatória) -->
+          <div class="campo" style="margin-bottom:16px">
+            <label>
+              Status inicial <span class="obrigatorio" aria-label="campo obrigatório">*</span>
+            </label>
+            <div class="opcoes-grupo" role="group" aria-label="Status do usuário">
+              <label>
+                <input type="radio" name="status" value="ativo" required> ✔ Ativo
+              </label>
+              <label>
+                <input type="radio" name="status" value="pendente"> ⚠ Pendente (aguarda confirmação)
+              </label>
+              <label>
+                <input type="radio" name="status" value="inativo"> ✖ Inativo
+              </label>
+            </div>
+          </div>
+
+          <!-- Permissões extras: checkbox (múltipla escolha) -->
+          <div class="campo">
+            <label>Permissões adicionais</label>
+            <div class="opcoes-grupo" role="group" aria-label="Permissões adicionais">
+              <label>
+                <input type="checkbox" name="permissao" value="relatorios"> 📊 Gerar relatórios
+              </label>
+              <label>
+                <input type="checkbox" name="permissao" value="exportar"> 📤 Exportar dados
+              </label>
+              <label>
+                <input type="checkbox" name="permissao" value="auditoria"> 🔍 Ver logs de auditoria
+              </label>
+              <label>
+                <input type="checkbox" name="permissao" value="2fa"> 🔐 Exigir 2FA
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- ── FIELDSET 4: Observações ────────── -->
+        <fieldset>
+          <legend>📝 Observações</legend>
+          <div class="campo">
+            <label for="novo-obs">Notas internas sobre o usuário</label>
+            <textarea
+              id="novo-obs"
+              name="observacoes"
+              rows="3"
+              maxlength="500"
+              placeholder="Informações adicionais visíveis apenas para administradores..."
+              aria-describedby="dica-obs"
+            ></textarea>
+            <span class="dica" id="dica-obs">Máximo de 500 caracteres. Não visível ao próprio usuário.</span>
+          </div>
+        </fieldset>
+
+        <!-- Barra de ações -->
+        <div class="acoes-form">
+          <button type="reset" class="btn-secundario" aria-label="Limpar formulário">
+            ✖ Limpar
+          </button>
+          <button type="submit" class="btn-primario" aria-label="Cadastrar novo usuário">
+            ✅ Cadastrar Usuário
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════════
+         SEÇÃO 4: GUIA DE ACESSIBILIDADE VIA TECLADO
+         Teste 3 do exercício: navegação sem mouse
+    ═══════════════════════════════════════════════════ -->
+    <section aria-labelledby="titulo-acessibilidade">
+      <h2 id="titulo-acessibilidade">⌨️ Testes de Acessibilidade com Teclado</h2>
+
+      <div class="guia-acessibilidade" role="note" aria-label="Guia de atalhos de teclado">
+        <h3>Como navegar nesta página apenas com o teclado:</h3>
+        <div class="atalhos">
+          <div class="atalho"><kbd>Tab</kbd> → Avançar para próximo elemento focável</div>
+          <div class="atalho"><kbd>Shift + Tab</kbd> → Voltar ao elemento anterior</div>
+          <div class="atalho"><kbd>Enter</kbd> → Confirmar / Submeter / Ativar botão</div>
+          <div class="atalho"><kbd>Space</kbd> → Marcar checkbox / Acionar botão</div>
+          <div class="atalho"><kbd>↑ ↓</kbd> → Navegar em opções de radio e select</div>
+          <div class="atalho"><kbd>Esc</kbd> → Cancelar / Fechar modal (se houver)</div>
+          <div class="atalho"><kbd>Tab</kbd> na tabela → Focar células e botões de ação</div>
+          <div class="atalho">Página abre → <kbd>Tab</kbd> revela o skip link</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px 18px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;font-size:0.88rem;color:#5d4037">
+        <strong>✅ O que foi implementado para acessibilidade nesta página:</strong>
+        <ul style="margin-top:8px;padding-left:18px;line-height:1.8">
+          <li><strong>Skip link</strong> → pressione <kbd>Tab</kbd> ao abrir a página para revelar o atalho "Pular para tabela"</li>
+          <li><strong>:focus-visible</strong> → contorno azul visível em <em>todos</em> os elementos focáveis pelo teclado</li>
+          <li><strong>aria-label</strong> em todos os botões de ação (Editar/Excluir) com nome do usuário</li>
+          <li><strong>aria-required="true"</strong> em campos obrigatórios (complementa o atributo <code>required</code>)</li>
+          <li><strong>aria-describedby</strong> vincula campos às suas dicas de ajuda para leitores de tela</li>
+          <li><strong>scope="col" / scope="rowgroup"</strong> nos <code>&lt;th&gt;</code> para leitores de tela navegarem na tabela</li>
+          <li><strong>role="search"</strong> no form de filtro → leitor de tela anuncia "região de pesquisa"</li>
+          <li><strong>tabindex="0"</strong> no wrapper da tabela → tabela é focável por teclado no mobile</li>
+          <li><strong>role="group" + aria-label</strong> nos grupos de radio e checkbox</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+</body>
+</html>
