@@ -4,9 +4,7 @@ from fastapi import FastAPI
 from strawberry.fastapi import GraphQLRouter
 from typing import List
 
-# ──────────────────────────────────────────
 # SCHEMA — define o que pode ser pedido
-# ──────────────────────────────────────────
 @strawberry.type
 class PokemonType:
     slot: int
@@ -18,10 +16,7 @@ class Pokemon:
     height: int
     weight: int
     types: List[PokemonType]
-
-# ──────────────────────────────────────────
 # RESOLVER — busca na PokeAPI e filtra dados
-# ──────────────────────────────────────────
 def get_pokemon(name: str) -> Pokemon:
     url = f"https://pokeapi.co/api/v2/pokemon/{name.lower()}"
     response = requests.get(url)
@@ -44,18 +39,14 @@ def get_pokemon(name: str) -> Pokemon:
         types=types,
     )
 
-# ──────────────────────────────────────────
 # QUERY ROOT
-# ──────────────────────────────────────────
 @strawberry.type
 class Query:
     @strawberry.field
     def pokemon(self, name: str) -> Pokemon:
         return get_pokemon(name)
 
-# ──────────────────────────────────────────
 # SERVIDOR FASTAPI + GRAPHQL
-# ──────────────────────────────────────────
 schema = strawberry.Schema(query=Query)
 graphql_app = GraphQLRouter(schema)
 
